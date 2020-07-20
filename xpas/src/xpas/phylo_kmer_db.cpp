@@ -11,6 +11,32 @@ void phylo_kmer_db::insert(key_type key, const pkdb_value& value)
     _map[key].push_back(value);
 }
 
+void phylo_kmer_db::set_sum(phylo_kmer::branch_type branch_id, phylo_kmer::score_type value)
+{
+    if (branch_id >= _bernoulli_sums.size())
+    {
+        const auto total_kmers_num = std::pow(xpas::seq_traits::alphabet_size, _kmer_size);
+        const auto threshold = xpas::score_threshold(_omega, _kmer_size);
+        double bernoulli_score_sum = total_kmers_num * std::log(1 - threshold);
+
+        for (size_t i = _bernoulli_sums.size(); i <= branch_id; ++i)
+        {
+            _bernoulli_sums.push_back(bernoulli_score_sum);
+        }
+    }
+    _bernoulli_sums[branch_id] = value;
+}
+
+phylo_kmer::score_type phylo_kmer_db::get_sum(phylo_kmer::branch_type branch_id) const
+{
+    return _bernoulli_sums[branch_id];
+}
+
+phylo_kmer::branch_type phylo_kmer_db::num_branches() const
+{
+    return _bernoulli_sums.size();
+}
+
 std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const noexcept
 {
     if (auto it = _map.find(key); it != _map.end())

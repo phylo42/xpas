@@ -136,8 +136,16 @@ namespace xpas
         /// \sa _kmer_size
         void insert(key_type key, const pkdb_value& value);
 
+        void set_sum(phylo_kmer::branch_type branch_id, phylo_kmer::score_type value);
+
+        phylo_kmer::score_type get_sum(phylo_kmer::branch_type branch_id) const;
+
+        phylo_kmer::branch_type num_branches() const;
+
     private:
         storage _map;
+
+        std::vector<phylo_kmer::score_type> _bernoulli_sums;
 
         /// \brief K-mer size.
         /// \details This number is given by user to the constructor. We can not guarantee

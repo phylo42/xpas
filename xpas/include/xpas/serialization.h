@@ -54,6 +54,15 @@ namespace boost::serialization
                 ar & branch & score;
             }
         }
+
+        size_t bernoulli_size = db.num_branches();
+        ar & bernoulli_size;
+
+        for (size_t i = 0; i < bernoulli_size; ++i)
+        {
+            const auto score_sum = db.get_sum(i);
+            ar & score_sum;
+        }
     }
 
     template<class Archive>
@@ -90,6 +99,17 @@ namespace boost::serialization
                 ar & branch & score;
                 db.insert(key, { branch, score });
             }
+        }
+
+        size_t bernoulli_sum_size = 0;
+        ar & bernoulli_sum_size;
+        db.set_sum(bernoulli_sum_size, 0);
+
+        for (size_t i = 0; i < bernoulli_sum_size; ++i)
+        {
+            xpas::phylo_kmer::score_type sum = 0.0;
+            ar & sum;
+            db.set_sum(i, sum);
         }
     }
 
