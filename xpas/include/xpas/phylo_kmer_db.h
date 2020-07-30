@@ -91,7 +91,7 @@ namespace xpas
 
 
         /// Ctors, dtor and operator=
-        phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree);
+        phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, double f, const std::string& tree);
         phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
         phylo_kmer_db(phylo_kmer_db&&) = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
@@ -121,6 +121,9 @@ namespace xpas
         size_t kmer_size() const noexcept;
         /// \brief Returns omega (core::score_threshold parameter)
         phylo_kmer::score_type omega() const noexcept;
+
+        double f() const noexcept;
+
         /// \brief Returns a view to the newick formatted phylogenetic tree
         std::string_view tree() const noexcept;
         /// \brief Returns a hash function used to hash kmers
@@ -159,6 +162,8 @@ namespace xpas
         /// \brief Score threshold paramenter.
         /// \sa core::score_threshold
         xpas::phylo_kmer::score_type _omega;
+
+        double _f;
 
         /// \brief Newick formatted phylogenetic tree
         std::string _tree;

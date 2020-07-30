@@ -15,7 +15,7 @@ namespace xpas
         std::ifstream ifs(filename);
         boost::archive::binary_iarchive ia(ifs);
 
-        xpas::phylo_kmer_db db { 0, 0.0, "" };
+        xpas::phylo_kmer_db db { 0, 0.0, 1.0, "" };
         ia & db;
         return db;
     }
@@ -41,6 +41,9 @@ namespace boost::serialization
 
         xpas::phylo_kmer::score_type omega = db.omega();
         ar & omega;
+
+        const auto f = db.f();
+        ar & f;
 
         size_t table_size = db.size();
         ar & table_size;
@@ -83,6 +86,10 @@ namespace boost::serialization
         xpas::phylo_kmer::score_type omega = 0;
         ar & omega;
         db._omega = omega;
+
+        double f = 1.0;
+        ar & f;
+        db._f = f;
 
         size_t table_size = 0;
         ar & table_size;

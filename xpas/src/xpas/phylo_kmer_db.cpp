@@ -2,8 +2,8 @@
 
 using namespace xpas;
 
-phylo_kmer_db::phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree)
-    : _kmer_size{ kmer_size }, _omega{ omega }, _tree { tree }
+phylo_kmer_db::phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, double f, const std::string& tree)
+    : _kmer_size{ kmer_size }, _omega{ omega }, _f{ f }, _tree { tree }
 {}
 
 void phylo_kmer_db::insert(key_type key, const pkdb_value& value)
@@ -72,6 +72,11 @@ size_t phylo_kmer_db::kmer_size() const noexcept
 xpas::phylo_kmer::score_type phylo_kmer_db::omega() const noexcept
 {
     return _omega;
+}
+
+double phylo_kmer_db::f() const noexcept
+{
+    return _f;
 }
 
 std::string_view phylo_kmer_db::tree() const noexcept
