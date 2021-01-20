@@ -229,57 +229,185 @@ namespace xpas
     {
         const auto begin = std::chrono::steady_clock::now();
 
-        std::cout << "Merging hash maps..." << std::endl;
-        for (const auto group_id : group_ids)
+        if (_filter == filter_type::entropy)
         {
-            const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+            std::cout << "Filtering by entropy" << std::endl;
+        }
+        else if (_filter == filter_type::random)
+        {
+            std::cout << "Random filtering..." << std::endl;
+        }
+        else
+        {
+            std::cout << "No filtering." << std::endl;
+        }
 
-    #ifdef KEEP_POSITIONS
-            if (_merge_branches)
+        if (_filter == filter_type::entropy)
+        {
+            phylo_kmer_db temp_db(_phylo_kmer_db.kmer_size(), _phylo_kmer_db.omega(), xpas::seq_type::name, "");
+            /// Load hash maps and merge them
+            for (const auto group_id : group_ids)
             {
-                for (const auto& [key, score_pos_pair] : hash_map)
-                {
-                    const auto& [score, position] = score_pos_pair;
-                    if (auto entries = _phylo_kmer_db.search(key); entries)
-                    {
-                        /// If there are entries, there must be only one because
-                        /// we always take maximum score among different branches.
-                        /// So this loop will have only one iteration
-                        for (const auto& [old_node, old_score, old_position] : *entries)
-                        {
-                            if (old_score < score)
-                            {
-                                _phylo_kmer_db.replace(key, { group_id, score, position });
-                            }
-                        }
-                    }
-                    else
-                    {
-                        _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
-                    }
-                }
-            }
-            else
-            {
-                for (const auto& [key, score_pos_pair] : hash_map)
-                {
-                    const auto& [score, position] = score_pos_pair;
-                    _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
-                }
-            }
-    #else
-            if (_merge_branches)
-            {
-                throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
-            }
-            else
-            {
+                const auto hash_map = load_hash_map(group_hashmap_file(group_id));
                 for (const auto& [key, score] : hash_map)
                 {
-                    _phylo_kmer_db.unsafe_insert(key, { group_id, score });
+                    temp_db.unsafe_insert(key, {group_id, score});
                 }
             }
-    #endif
+
+            const auto tree = xpas::io::parse_newick(_phylo_kmer_db.tree());
+            const auto threshold = xpas::score_threshold(_phylo_kmer_db.omega(), _phylo_kmer_db.kmer_size());
+            const auto log_threshold = std::log10(threshold);
+
+            hash_map<phylo_kmer::key_type, double> filter_stats;
+            for (const auto& [key, entries] : temp_db)
+            {
+                /// calculate the score sum to normalize scores
+                double score_sum = 0;
+                double log_score_sum = 0;
+                for (const auto& [_, log_score] : entries)
+                {
+                    score_sum += logscore_to_score(log_score);
+                    log_score_sum += log_score;
+                }
+
+                /// do not forget the branches that are not stored in the database,
+                /// they suppose to have the threshold score
+                score_sum += static_cast<double>(tree.get_node_count() - entries.size()) * threshold;
+                log_score_sum += static_cast<double>(tree.get_node_count() - entries.size()) * log_threshold;
+
+                /// Entropy
+                if (_filter == filter_type::entropy)
+                {
+                    const auto weighted_threshold = threshold / score_sum;
+                    const auto target_threshold = shannon(weighted_threshold);
+
+                    for (const auto& [branch, log_score] : entries)
+                    {
+                        const auto weighted_score = logscore_to_score(log_score) / score_sum;
+                        const auto target_value = shannon(weighted_score);
+
+                        if (filter_stats.find(key) == filter_stats.end())
+                        {
+                            filter_stats[key] = static_cast<double>(tree.get_node_count()) * target_threshold;
+                        }
+                        filter_stats[key] = filter_stats[key] - target_threshold + target_value;
+                    }
+                }
+            }
+
+            for (const auto& [key, stats] : filter_stats)
+            {
+                std::cout << stats << " ";
+            }
+            std::cout << std::endl << std::endl;
+
+            std::cout << "Filtering phylo k-mers..." << std::endl;
+
+            /// copy entropy values into a vector
+            std::vector<phylo_kmer::score_type> filter_values;
+            filter_values.reserve(filter_stats.size());
+            for (const auto& entry : filter_stats)
+            {
+                filter_values.push_back(entry.second);
+            }
+
+            size_t counter = 0;
+            if (_filter == filter_type::entropy)
+            {
+                std::cout << "Partial sort..." << std::endl;
+                const auto qth_element = filter_values.size() * _mu;
+                std::nth_element(filter_values.begin(), filter_values.begin() + qth_element, filter_values.end());
+                const auto quantile = filter_values[qth_element];
+
+                std::cout << "Filter threshold value: " << quantile << std::endl;
+
+                for (const auto& [key, value] : filter_stats)
+                {
+                    if (value <= quantile)
+                    {
+                        ++counter;
+                    }
+                }
+                std::cout << counter << " out of " << filter_values.size() <<
+                          " (" << ((float)counter) / filter_values.size() << ")" << std::endl;
+
+                std::cout << "Merging hash maps..." << std::endl;
+                for (const auto group_id : group_ids)
+                {
+                    const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+                    for (const auto& [key, score] : hash_map)
+                    {
+                        if (filter_values[key] <= quantile)
+                        {
+                            _phylo_kmer_db.unsafe_insert(key, {group_id, score});
+                            //std::cout << filter_values[key] << " ";
+                        }
+                    }
+                }
+                std::cout << std::endl;
+
+            }
+        }
+        else if (_filter == filter_type::random)
+        {
+            /// create a hash map which contains boolean values
+            /// which tell if we keep corresponding k-mers.
+            hash_map<phylo_kmer::key_type, bool> keep_keys;
+            for (const auto group_id : group_ids)
+            {
+                const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+                for (const auto& [key, _] : hash_map)
+                {
+                    keep_keys[key] = true;
+                }
+            }
+
+            std::default_random_engine generator;
+            std::uniform_real_distribution<double> distribution(0, 1);
+
+            /// update keep_keys randomly
+            for (auto& [key, _] : keep_keys)
+            {
+                keep_keys[key] = distribution(generator) <= _mu;
+            }
+
+            /// Load hash maps and merge them
+            std::cout << "Merging hash maps..." << std::endl;
+            for (const auto group_id : group_ids)
+            {
+                const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+                for (const auto& [key, score] : hash_map)
+                {
+                    if (keep_keys[key])
+                    {
+                        _phylo_kmer_db.unsafe_insert(key, {group_id, score});
+                    }
+                }
+            }
+
+            size_t counter = 0;
+            for (auto& [_, keep] : keep_keys)
+            {
+                if (keep)
+                {
+                    counter++;
+                }
+            }
+            std::cout << counter << " out of " << keep_keys.size() <<
+                      " (" << ((float)counter) / keep_keys.size() << ")" << std::endl;
+        }
+        else
+        {
+            std::cout << "Merging hash maps..." << std::endl;
+            for (const auto group_id : group_ids)
+            {
+                const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+                for (const auto& [key, score] : hash_map)
+                {
+                    _phylo_kmer_db.unsafe_insert(key, {group_id, score});
+                }
+            }
         }
 
         const auto end = std::chrono::steady_clock::now();
