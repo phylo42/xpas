@@ -296,11 +296,11 @@ namespace xpas
                 }
             }
 
-            for (const auto& [key, stats] : filter_stats)
+            /*for (const auto& [key, stats] : filter_stats)
             {
                 std::cout << stats << " ";
             }
-            std::cout << std::endl << std::endl;
+            std::cout << std::endl << std::endl;*/
 
             std::cout << "Filtering phylo k-mers..." << std::endl;
 
