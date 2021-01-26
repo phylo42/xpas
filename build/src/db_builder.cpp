@@ -320,6 +320,12 @@ namespace xpas
                 std::nth_element(filter_values.begin(), filter_values.begin() + qth_element, filter_values.end());
                 const auto quantile = filter_values[qth_element];
 
+                for (const auto& fv : filter_values)
+                {
+                    std::cout << fv << " ";
+                }
+                std::cout << std::endl << std::endl;
+
                 std::cout << "Filter threshold value: " << quantile << std::endl;
 
                 for (const auto& [key, value] : filter_stats)
@@ -338,23 +344,28 @@ namespace xpas
                     const auto hash_map = load_hash_map(group_hashmap_file(group_id));
                     for (const auto& [key, score] : hash_map)
                     {
-                        if (filter_values[key] <= quantile)
+                        if (filter_stats[key] <= quantile)
                         {
                             _phylo_kmer_db.unsafe_insert(key, {group_id, score});
-                            //std::cout << filter_values[key] << " ";
+                            std::cout << "TAKE " << key << " " << filter_stats[key] << std::endl;
+                        }
+                        else
+                        {
+                            std::cout << "IGNORE " << key << " " << filter_stats[key] << std::endl;
                         }
                     }
                 }
                 std::cout << std::endl;
 
-                /*for (const auto& [key, entries] : _phylo_kmer_db)
+                for (const auto& [key, entries] : _phylo_kmer_db)
                 {
-                    std::cout << key << " " << xpas::decode_kmer(key, _kmer_size) << ": " << std::endl;
+                    std::cout << key << " " << xpas::decode_kmer(key, _kmer_size) << ": " <<
+                        filter_stats[key] << std::endl;
                     for (const auto& [branch, score] : entries)
                     {
                         std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
                     }
-                }*/
+                }
             }
         }
         else if (_filter == filter_type::random)
