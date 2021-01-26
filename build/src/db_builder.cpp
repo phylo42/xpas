@@ -347,6 +347,14 @@ namespace xpas
                 }
                 std::cout << std::endl;
 
+                /*for (const auto& [key, entries] : _phylo_kmer_db)
+                {
+                    std::cout << key << " " << xpas::decode_kmer(key, _kmer_size) << ": " << std::endl;
+                    for (const auto& [branch, score] : entries)
+                    {
+                        std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
+                    }
+                }*/
             }
         }
         else if (_filter == filter_type::random)
