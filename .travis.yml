@@ -5,7 +5,8 @@ env:
     # Ubuntu version
     - LINUX_DIST=trusty
     - DEPS_DIR=${TRAVIS_BUILD_DIR}/deps
-
+    - PATH="$TRAVIS_BUILD_DIR/cmake-download/bin:$PATH"
+    
 matrix:
   include:
     - os: linux
@@ -18,7 +19,6 @@ matrix:
             - g++-7
             - libboost-all-dev
             - zlib1g-dev
-            - cmake
           sources: &precise_latest_boost_sources
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.7
