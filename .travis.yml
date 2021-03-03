@@ -30,8 +30,9 @@ before_install:
 
 script:
   - mkdir -p bin
-  - cmake -S . -B bin
-  - cmake --build bin --config Release -DHASH_MAP=USE_TSL_ROBIN_MAP
-  - cmake --build bin --config Release --target test_dna
-  - cd bin/tests
+  - cd bin
+  - cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DHASH_MAP=USE_TSL_ROBIN_MAP
+  - cmake --build . --config Release
+  - cmake --build . --config Release --target test_dna
+  - cd tests
   - ctest -C Release
