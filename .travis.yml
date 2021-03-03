@@ -3,7 +3,7 @@ language: cpp
 env:
   global:
     # Ubuntu version
-    - LINUX_DIST=trusty
+    - LINUX_DIST=bionic
     - DEPS_DIR=${TRAVIS_BUILD_DIR}/deps
     - PATH="$TRAVIS_BUILD_DIR/cmake-download/bin:$PATH"
 
