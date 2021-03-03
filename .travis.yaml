@@ -27,6 +27,7 @@ before_install:
   # Combine global build options with OS/compiler-dependent options
   - export CMAKE_OPTIONS=${CMAKE_OPTIONS}" "${ENV_CMAKE_OPTIONS}
   - export CXX_FLAGS=${CXX_FLAGS}" "${ENV_CXX_FLAGS}
+
 script:
   - cmake -S . -B bin &&
       cmake --build bin --config Release -DHASH_MAP=USE_TSL_ROBIN_MAP &&
