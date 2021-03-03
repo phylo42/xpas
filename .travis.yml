@@ -29,8 +29,9 @@ before_install:
   - export CXX_FLAGS=${CXX_FLAGS}" "${ENV_CXX_FLAGS}
 
 script:
-  - cmake -S . -B bin &&
-      cmake --build bin --config Release -DHASH_MAP=USE_TSL_ROBIN_MAP &&
-      cmake --build bin --config Release --target test_dna &&
-      cd bin/tests &&
-      ctest -C Release
+  - mkdir -p bin
+  - cmake -S . -B bin
+  - cmake --build bin --config Release -DHASH_MAP=USE_TSL_ROBIN_MAP
+  - cmake --build bin --config Release --target test_dna
+  - cd bin/tests
+  - ctest -C Release
