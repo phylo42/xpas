@@ -30,8 +30,8 @@ before_install:
 
 script:
   - mkdir -p bin
-  - cmake -S . -B bin -DCMAKE_BUILD_TYPE=Release -DHASH_MAP=USE_TSL_ROBIN_MAP
-  - cmake --build bin --config Release
-  - cmake --build bin --config Release --target test_dna
-  - cd bin/tests
+  - cmake .. -DCMAKE_BUILD_TYPE=Release -DHASH_MAP=USE_TSL_ROBIN_MAP
+  - make all
+  - make test_dna
+  - cd tests
   - ctest -C Release
